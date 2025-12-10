@@ -1,0 +1,1078 @@
+[file name]: patient.html
+[file content begin]
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Center - Hospital Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .sidebar { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding-top: 20px;
+        }
+        .nav-link { color: white !important; padding: 12px 20px; }
+        .nav-link:hover { background: rgba(255,255,255,0.1); }
+        .nav-link.active { background: rgba(255,255,255,0.2); }
+        .card { border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
+        .search-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .doctor-card {
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+        .doctor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-4">
+                    <h4 class="text-center">👤 Patient Center</h4>
+                    <p class="text-center text-light" id="patient-id-display">ID: Loading...</p>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="loadDashboard(); return false;">
+                            🏠 My Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="loadAppointments(); return false;">
+                            📅 My Appointments
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="loadBilling(); return false;">
+                            💰 My Bills
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="loadFindDoctors(); return false;">
+                            🔍 Find Doctors
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="openMakeAppointmentModal(); return false;">
+                            ➕ Make Appointment
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="logout(); return false;">
+                            🚪 Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Main Content Area -->
+            <div class="col-md-9 col-lg-10 p-4">
+                <h2 class="mb-4" id="page-title">Patient Personal Homepage</h2>
+                
+                <!-- Personal Information Area (Homepage Display) -->
+                <div id="dashboard-content">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">Personal Information</h5>
+                                </div>
+                                <div class="card-body" id="patient-info">
+                                    <p>Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0">Today's Reminders</h5>
+                                </div>
+                                <div class="card-body" id="patient-reminders">
+                                    <p>Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Appointments (Homepage Display) -->
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">Recent Appointment Records</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Appointment ID</th>
+                                            <th>Date</th>
+                                            <th>Time</th>
+                                            <th>Doctor</th>
+                                            <th>Reason</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="appointments-table">
+                                        <tr><td colspan="6">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Appointment Details Area (Separate Page) -->
+                <div id="appointments-content" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">All My Appointments</h5>
+                            <button class="btn btn-light btn-sm" onclick="openMakeAppointmentModal()">➕ New Appointment</button>
+                        </div>
+                        <div class="card-body">
+                            <!-- Search Form for Appointments -->
+                            <div class="search-form mb-4">
+                                <h6>Search Appointments</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Date Range</label>
+                                        <input type="date" class="form-control" id="searchAppointmentDate">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Status</label>
+                                        <select class="form-select" id="searchAppointmentStatus">
+                                            <option value="">All Status</option>
+                                            <option value="Scheduled">Scheduled</option>
+                                            <option value="Completed">Completed</option>
+                                            <option value="Cancelled">Cancelled</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Doctor</label>
+                                        <input type="text" class="form-control" id="searchAppointmentDoctor" placeholder="Doctor name">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button class="btn btn-primary w-100" onclick="searchAppointments()">Search</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Appointment ID</th>
+                                            <th>Date</th>
+                                            <th>Time</th>
+                                            <th>Doctor</th>
+                                            <th>Specialization</th>
+                                            <th>Reason</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="all-appointments-table">
+                                        <tr><td colspan="8">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Billing Details Area (Separate Page) -->
+                <div id="billing-content" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">My Bills</h5>
+                            <button class="btn btn-light btn-sm" onclick="exportBills()">📄 Export</button>
+                        </div>
+                        <div class="card-body">
+                            <!-- Search Form for Bills -->
+                            <div class="search-form mb-4">
+                                <h6>Search Bills</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Date Range</label>
+                                        <input type="date" class="form-control" id="searchBillDate">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Amount Range</label>
+                                        <select class="form-select" id="searchBillAmount">
+                                            <option value="">All Amounts</option>
+                                            <option value="0-500">¥0 - ¥500</option>
+                                            <option value="500-1000">¥500 - ¥1,000</option>
+                                            <option value="1000-5000">¥1,000 - ¥5,000</option>
+                                            <option value="5000+">¥5,000+</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Status</label>
+                                        <select class="form-select" id="searchBillStatus">
+                                            <option value="">All Status</option>
+                                            <option value="Paid">Paid</option>
+                                            <option value="Pending">Pending</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button class="btn btn-primary w-100" onclick="searchBills()">Search</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Bill ID</th>
+                                            <th>Date</th>
+                                            <th>Description</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="billing-table">
+                                        <tr><td colspan="6">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Find Doctors Area -->
+                <div id="find-doctors-content" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Find & Book Doctors</h5>
+                            <button class="btn btn-light btn-sm" onclick="openMakeAppointmentModal()">➕ Make Appointment</button>
+                        </div>
+                        <div class="card-body">
+                            <!-- Doctor Search Form -->
+                            <div class="search-form mb-4">
+                                <h6>Search Doctors</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Specialization</label>
+                                        <select class="form-select" id="searchSpecialization">
+                                            <option value="">All Specializations</option>
+                                            <option value="General Practice">General Practice</option>
+                                            <option value="Internal Medicine">Internal Medicine</option>
+                                            <option value="Surgery">Surgery</option>
+                                            <option value="Pediatrics">Pediatrics</option>
+                                            <option value="Obstetrics & Gynecology">Obstetrics & Gynecology</option>
+                                            <option value="Ophthalmology">Ophthalmology</option>
+                                            <option value="ENT">ENT</option>
+                                            <option value="Dermatology">Dermatology</option>
+                                            <option value="Dentistry">Dentistry</option>
+                                            <option value="Psychology">Psychology</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Name</label>
+                                        <input type="text" class="form-control" id="searchDoctorName" placeholder="Doctor name">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Hospital Branch</label>
+                                        <select class="form-select" id="searchBranch">
+                                            <option value="">All Branches</option>
+                                            <option value="Main Hospital">Main Hospital</option>
+                                            <option value="Branch A">Branch A</option>
+                                            <option value="Branch B">Branch B</option>
+                                            <option value="Branch C">Branch C</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button class="btn btn-primary w-100" onclick="searchDoctors()">Search</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Doctor Cards Display -->
+                            <div class="row" id="doctors-grid">
+                                <div class="col-md-12 text-center">
+                                    <p>Loading doctors...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointment Modal -->
+    <div class="modal fade" id="makeAppointmentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Make Appointment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="makeAppointmentForm">
+                        <div class="mb-3">
+                            <label class="form-label">Doctor</label>
+                            <select class="form-select" id="appointmentDoctor" required>
+                                <option value="">Select Doctor</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Appointment Date</label>
+                            <input type="date" class="form-control" id="appointmentDate" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Appointment Time</label>
+                            <select class="form-select" id="appointmentTime" required>
+                                <option value="">Select Time</option>
+                                <option value="08:00">08:00</option>
+                                <option value="08:30">08:30</option>
+                                <option value="09:00">09:00</option>
+                                <option value="09:30">09:30</option>
+                                <option value="10:00">10:00</option>
+                                <option value="10:30">10:30</option>
+                                <option value="11:00">11:00</option>
+                                <option value="11:30">11:30</option>
+                                <option value="13:00">13:00</option>
+                                <option value="13:30">13:30</option>
+                                <option value="14:00">14:00</option>
+                                <option value="14:30">14:30</option>
+                                <option value="15:00">15:00</option>
+                                <option value="15:30">15:30</option>
+                                <option value="16:00">16:00</option>
+                                <option value="16:30">16:30</option>
+                                <option value="17:00">17:00</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Reason for Appointment</label>
+                            <select class="form-select" id="appointmentReason" required>
+                                <option value="">Select Reason</option>
+                                <option value="Regular Checkup">Regular Checkup</option>
+                                <option value="Follow-up">Follow-up</option>
+                                <option value="Treatment">Treatment</option>
+                                <option value="Consultation">Consultation</option>
+                                <option value="Physical Exam">Physical Exam</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Symptom Description</label>
+                            <textarea class="form-control" id="appointmentDescription" rows="3" placeholder="Describe your symptoms or questions"></textarea>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Submit Appointment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // Get current logged-in patient ID from localStorage
+    let currentPatientId = localStorage.getItem('patient_id');
+    
+    // If no patient ID, try to extract from currentUser
+    if (!currentPatientId) {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (currentUser.role === 'patient' && currentUser.id) {
+            currentPatientId = currentUser.id.replace(/\D/g, '');
+            localStorage.setItem('patient_id', currentPatientId);
+        }
+    }
+    
+    // If no patient ID, redirect to login page
+    if (!currentPatientId) {
+        alert('Please login first!');
+        window.location.href = 'index.html';
+    }
+    
+    // Show patient ID when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('patient-id-display').textContent = `ID: P${currentPatientId.toString().padStart(3, '0')}`;
+        loadDashboard();
+    });
+    
+    // Page switching functions
+    function loadDashboard() {
+        document.getElementById('page-title').textContent = 'Patient Personal Homepage';
+        document.getElementById('dashboard-content').style.display = 'block';
+        document.getElementById('appointments-content').style.display = 'none';
+        document.getElementById('billing-content').style.display = 'none';
+        document.getElementById('find-doctors-content').style.display = 'none';
+        updateNavActive('dashboard');
+        loadPatientInfo();
+        loadAppointmentsData();
+        loadBillingData();
+    }
+    
+    function loadAppointments() {
+        document.getElementById('page-title').textContent = 'My Appointments';
+        document.getElementById('dashboard-content').style.display = 'none';
+        document.getElementById('appointments-content').style.display = 'block';
+        document.getElementById('billing-content').style.display = 'none';
+        document.getElementById('find-doctors-content').style.display = 'none';
+        updateNavActive('appointments');
+        loadAllAppointments();
+    }
+    
+    function loadBilling() {
+        document.getElementById('page-title').textContent = 'My Bills';
+        document.getElementById('dashboard-content').style.display = 'none';
+        document.getElementById('appointments-content').style.display = 'none';
+        document.getElementById('billing-content').style.display = 'block';
+        document.getElementById('find-doctors-content').style.display = 'none';
+        updateNavActive('billing');
+        loadAllBilling();
+    }
+    
+    function loadFindDoctors() {
+        document.getElementById('page-title').textContent = 'Find Doctors';
+        document.getElementById('dashboard-content').style.display = 'none';
+        document.getElementById('appointments-content').style.display = 'none';
+        document.getElementById('billing-content').style.display = 'none';
+        document.getElementById('find-doctors-content').style.display = 'block';
+        updateNavActive('find-doctors');
+        loadAllDoctors();
+    }
+    
+    function updateNavActive(page) {
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        const navLinks = document.querySelectorAll('.nav-link');
+        if (page === 'dashboard') {
+            navLinks[0].classList.add('active');
+        } else if (page === 'appointments') {
+            navLinks[1].classList.add('active');
+        } else if (page === 'billing') {
+            navLinks[2].classList.add('active');
+        } else if (page === 'find-doctors') {
+            navLinks[3].classList.add('active');
+        }
+    }
+    
+    // Load patient information
+    async function loadPatientInfo() {
+        try {
+            const response = await fetch(`http://localhost:5000/patients/${currentPatientId}`);
+            if (!response.ok) throw new Error('API request failed');
+            const patientData = await response.json();
+            
+            let genderDisplay = 'Unknown';
+            if (patientData.gender === 'male' || patientData.gender === 'M') {
+                genderDisplay = 'Male';
+            } else if (patientData.gender === 'female' || patientData.gender === 'F') {
+                genderDisplay = 'Female';
+            }
+            
+            document.getElementById('patient-info').innerHTML = `
+                <p><strong>Name:</strong> ${patientData.first_name || ''} ${patientData.last_name || ''}</p>
+                <p><strong>Patient ID:</strong> P${patientData.patient_id.toString().padStart(3, '0')}</p>
+                <p><strong>Gender:</strong> ${genderDisplay}</p>
+                <p><strong>Phone:</strong> ${patientData.contact_number || 'Not filled'}</p>
+                <p><strong>Insurance:</strong> ${patientData.insurance_provider || 'Not filled'} (${patientData.insurance_number || 'None'})</p>
+                <p><strong>Registration Date:</strong> ${new Date().toLocaleDateString('en-US')}</p>
+            `;
+            
+        } catch (error) {
+            console.error('Failed to load patient information:', error);
+            document.getElementById('patient-info').innerHTML = `<p class="text-danger">Load failed, please refresh page</p>`;
+        }
+    }
+    
+    // Load appointment data (homepage shows recent appointments)
+    async function loadAppointmentsData() {
+        try {
+            const response = await fetch(`http://localhost:5000/patients/${currentPatientId}/appointments`);
+            const appointments = await response.json();
+            
+            if (appointments.length === 0) {
+                document.getElementById('appointments-table').innerHTML = `
+                    <tr><td colspan="6" class="text-center">No appointment records</td></tr>
+                `;
+                return;
+            }
+            
+            let tableHtml = '';
+            appointments.slice(0, 5).forEach(appointment => {
+                const statusBadge = appointment.status === 'Scheduled' 
+                    ? '<span class="badge bg-warning">Scheduled</span>'
+                    : appointment.status === 'Completed'
+                    ? '<span class="badge bg-success">Completed</span>'
+                    : '<span class="badge bg-secondary">' + appointment.status + '</span>';
+                
+                tableHtml += `
+                    <tr>
+                        <td>A${appointment.appointment_id.toString().padStart(3, '0')}</td>
+                        <td>${appointment.appointment_date}</td>
+                        <td>${appointment.appointment_time}</td>
+                        <td>${appointment.doctor_first_name} ${appointment.doctor_last_name}</td>
+                        <td>${appointment.reason || 'Regular Checkup'}</td>
+                        <td>${statusBadge}</td>
+                    </tr>
+                `;
+            });
+            
+            document.getElementById('appointments-table').innerHTML = tableHtml;
+            
+        } catch (error) {
+            console.error('Failed to load appointment data:', error);
+            document.getElementById('appointments-table').innerHTML = `
+                <tr><td colspan="6" class="text-danger">Load failed</td></tr>
+            `;
+        }
+    }
+    
+    // Load billing data (homepage shows reminders)
+    async function loadBillingData() {
+        try {
+            const response = await fetch(`http://localhost:5000/patients/${currentPatientId}/billing`);
+            const bills = await response.json();
+            
+            if (bills.length === 0) {
+                document.getElementById('patient-reminders').innerHTML = `
+                    <p>✅ No pending items</p>
+                    <p>📅 Next appointment: None</p>
+                    <p>💰 Pending bills: 0</p>
+                `;
+                return;
+            }
+            
+            let totalPending = 0;
+            bills.forEach(bill => {
+                if (bill.status !== 'Paid') {
+                    totalPending += bill.amount || 0;
+                }
+            });
+            
+            document.getElementById('patient-reminders').innerHTML = `
+                <p>${bills.filter(b => b.status !== 'Paid').length === 0 ? '✅ No pending items' : `📋 Pending bills: ${bills.filter(b => b.status !== 'Paid').length}`}</p>
+                <p>💰 Total pending: ¥${totalPending.toFixed(2)}</p>
+            `;
+            
+        } catch (error) {
+            console.error('Failed to load billing data:', error);
+            document.getElementById('patient-reminders').innerHTML = `
+                <p>✅ No pending items</p>
+                <p>📅 Next appointment: None</p>
+                <p>💰 Pending bills: 0</p>
+            `;
+        }
+    }
+    
+    // Load all appointment data with search functionality
+    async function loadAllAppointments() {
+        try {
+            const response = await fetch(`http://localhost:5000/patients/${currentPatientId}/appointments`);
+            const appointments = await response.json();
+            
+            window.allAppointments = appointments; // Store for searching
+            
+            if (appointments.length === 0) {
+                document.getElementById('all-appointments-table').innerHTML = `
+                    <tr><td colspan="8" class="text-center">No appointment records</td></tr>
+                `;
+                return;
+            }
+            
+            displayAppointments(appointments);
+            
+        } catch (error) {
+            console.error('Failed to load all appointments:', error);
+            document.getElementById('all-appointments-table').innerHTML = `
+                <tr><td colspan="8" class="text-danger">Load failed</td></tr>
+            `;
+        }
+    }
+    
+    // Display appointments with filtering
+    function displayAppointments(appointments) {
+        let tableHtml = '';
+        appointments.forEach(appointment => {
+            const statusBadge = appointment.status === 'Scheduled' 
+                ? '<span class="badge bg-warning">Scheduled</span>'
+                : appointment.status === 'Completed'
+                ? '<span class="badge bg-success">Completed</span>'
+                : '<span class="badge bg-secondary">' + appointment.status + '</span>';
+            
+            let actionButton = '';
+            if (appointment.status === 'Scheduled') {
+                actionButton = `<button class="btn btn-sm btn-outline-danger" onclick="cancelAppointment(${appointment.appointment_id})">Cancel</button>`;
+            }
+            
+            tableHtml += `
+                <tr>
+                    <td>A${appointment.appointment_id.toString().padStart(3, '0')}</td>
+                    <td>${appointment.appointment_date}</td>
+                    <td>${appointment.appointment_time}</td>
+                    <td>${appointment.doctor_first_name} ${appointment.doctor_last_name}</td>
+                    <td>${appointment.specialization || 'General Practice'}</td>
+                    <td>${appointment.reason || 'Regular Checkup'}</td>
+                    <td>${statusBadge}</td>
+                    <td>${actionButton}</td>
+                </tr>
+            `;
+        });
+        
+        document.getElementById('all-appointments-table').innerHTML = tableHtml;
+    }
+    
+    // Search appointments
+    function searchAppointments() {
+        const date = document.getElementById('searchAppointmentDate').value;
+        const status = document.getElementById('searchAppointmentStatus').value;
+        const doctorName = document.getElementById('searchAppointmentDoctor').value.toLowerCase();
+        
+        let filteredAppointments = window.allAppointments;
+        
+        if (date) {
+            filteredAppointments = filteredAppointments.filter(a => a.appointment_date === date);
+        }
+        
+        if (status) {
+            filteredAppointments = filteredAppointments.filter(a => a.status === status);
+        }
+        
+        if (doctorName) {
+            filteredAppointments = filteredAppointments.filter(a => 
+                `${a.doctor_first_name} ${a.doctor_last_name}`.toLowerCase().includes(doctorName)
+            );
+        }
+        
+        displayAppointments(filteredAppointments);
+    }
+    
+    // Load all billing data with search functionality
+    async function loadAllBilling() {
+        try {
+            const response = await fetch(`http://localhost:5000/patients/${currentPatientId}/billing`);
+            const bills = await response.json();
+            
+            window.allBills = bills; // Store for searching
+            
+            if (bills.length === 0) {
+                document.getElementById('billing-table').innerHTML = `
+                    <tr><td colspan="6" class="text-center">No billing records</td></tr>
+                `;
+                return;
+            }
+            
+            displayBills(bills);
+            
+        } catch (error) {
+            console.error('Failed to load billing data:', error);
+            document.getElementById('billing-table').innerHTML = `
+                <tr><td colspan="6" class="text-danger">Load failed</td></tr>
+            `;
+        }
+    }
+    
+    // Display bills with filtering
+    function displayBills(bills) {
+        let totalPending = 0;
+        let tableHtml = '';
+        
+        bills.forEach(bill => {
+            const statusBadge = bill.status === 'Paid' 
+                ? '<span class="badge bg-success">Paid</span>'
+                : '<span class="badge bg-danger">Pending</span>';
+            
+            const actionButton = bill.status === 'Paid'
+                ? '<button class="btn btn-sm btn-outline-success" disabled>Paid</button>'
+                : `<button class="btn btn-sm btn-danger" onclick="payBill(${bill.bill_id})">Pay Now</button>`;
+            
+            if (bill.status !== 'Paid') {
+                totalPending += bill.amount || 0;
+            }
+            
+            tableHtml += `
+                <tr>
+                    <td>B${bill.bill_id.toString().padStart(3, '0')}</td>
+                    <td>${bill.bill_date}</td>
+                    <td>${bill.description || 'Medical Fee'}</td>
+                    <td>¥${(bill.amount || 0).toFixed(2)}</td>
+                    <td>${statusBadge}</td>
+                    <td>${actionButton}</td>
+                </tr>
+            `;
+        });
+        
+        document.getElementById('billing-table').innerHTML = tableHtml;
+    }
+    
+    // Search bills
+    function searchBills() {
+        const date = document.getElementById('searchBillDate').value;
+        const amountRange = document.getElementById('searchBillAmount').value;
+        const status = document.getElementById('searchBillStatus').value;
+        
+        let filteredBills = window.allBills;
+        
+        if (date) {
+            filteredBills = filteredBills.filter(b => b.bill_date === date);
+        }
+        
+        if (status) {
+            filteredBills = filteredBills.filter(b => b.status === status);
+        }
+        
+        if (amountRange) {
+            const [min, max] = amountRange === '5000+' ? [5000, Infinity] : amountRange.split('-').map(Number);
+            filteredBills = filteredBills.filter(b => {
+                const amount = b.amount || 0;
+                return amount >= min && (max === Infinity ? true : amount <= max);
+            });
+        }
+        
+        displayBills(filteredBills);
+    }
+    
+    // Export bills function
+    function exportBills() {
+        const bills = window.allBills || [];
+        let csvContent = "data:text/csv;charset=utf-8,Bill ID,Date,Description,Amount,Status\n";
+        
+        bills.forEach(bill => {
+            const row = [
+                `B${bill.bill_id.toString().padStart(3, '0')}`,
+                bill.bill_date,
+                bill.description || 'Medical Fee',
+                `¥${(bill.amount || 0).toFixed(2)}`,
+                bill.status
+            ].join(",");
+            csvContent += row + "\n";
+        });
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `patient_bills_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
+    // Pay bill
+    async function payBill(billId) {
+        if (confirm('Confirm payment for this bill?')) {
+            try {
+                const response = await fetch(`http://localhost:5000/billing/${billId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'Paid', payment_method: 'Online Payment' })
+                });
+                
+                if (response.ok) {
+                    alert(`Bill B${billId.toString().padStart(3, '0')} paid successfully!`);
+                    if (document.getElementById('billing-content').style.display === 'block') {
+                        loadAllBilling();
+                    }
+                    if (document.getElementById('dashboard-content').style.display === 'block') {
+                        loadBillingData();
+                    }
+                } else {
+                    alert('Payment failed, please try again later');
+                }
+            } catch (error) {
+                console.error('Payment failed:', error);
+                alert('Payment failed, please check network connection');
+            }
+        }
+    }
+    
+    // Cancel appointment
+    async function cancelAppointment(appointmentId) {
+        if (confirm('Are you sure you want to cancel this appointment?')) {
+            try {
+                const response = await fetch(`http://localhost:5000/appointments/${appointmentId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'Cancelled' })
+                });
+                
+                if (response.ok) {
+                    alert('Appointment cancelled');
+                    if (document.getElementById('appointments-content').style.display === 'block') {
+                        loadAllAppointments();
+                    }
+                    if (document.getElementById('dashboard-content').style.display === 'block') {
+                        loadAppointmentsData();
+                    }
+                } else {
+                    alert('Cancellation failed, please try again later');
+                }
+            } catch (error) {
+                console.error('Failed to cancel appointment:', error);
+                alert('Cancellation failed, please check network connection');
+            }
+        }
+    }
+    
+    // Open appointment modal
+    async function openMakeAppointmentModal() {
+        const modal = new bootstrap.Modal(document.getElementById('makeAppointmentModal'));
+        const form = document.getElementById('makeAppointmentForm');
+        
+        form.reset();
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('appointmentDate').value = tomorrow.toISOString().split('T')[0];
+        
+        await loadDoctorOptionsForPatient();
+        modal.show();
+    }
+    
+    // Load doctor options (for patient appointments)
+    async function loadDoctorOptionsForPatient() {
+        try {
+            const response = await fetch('http://localhost:5000/doctors');
+            const doctors = await response.json();
+            
+            const select = document.getElementById('appointmentDoctor');
+            while (select.options.length > 1) select.remove(1);
+            
+            doctors.forEach(doctor => {
+                const option = document.createElement('option');
+                option.value = doctor.doctor_id;
+                option.textContent = `Dr. ${doctor.first_name} ${doctor.last_name} - ${doctor.specialization}`;
+                select.appendChild(option);
+            });
+            
+        } catch (error) {
+            console.error('Failed to load doctor options:', error);
+        }
+    }
+    
+    // Load all doctors for search
+    async function loadAllDoctors() {
+        try {
+            const response = await fetch('http://localhost:5000/doctors');
+            const doctors = await response.json();
+            
+            window.allDoctors = doctors; // Store for searching
+            displayDoctors(doctors);
+            
+        } catch (error) {
+            console.error('Failed to load doctors:', error);
+            document.getElementById('doctors-grid').innerHTML = `
+                <div class="col-md-12 text-center">
+                    <p class="text-danger">Failed to load doctors</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Display doctors in grid
+    function displayDoctors(doctors) {
+        const container = document.getElementById('doctors-grid');
+        
+        if (doctors.length === 0) {
+            container.innerHTML = `
+                <div class="col-md-12 text-center">
+                    <p>No doctors found</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        doctors.forEach(doctor => {
+            const experience = doctor.years_experience || 0;
+            const experienceText = experience > 0 ? `${experience} years experience` : 'New doctor';
+            
+            html += `
+                <div class="col-md-4 mb-4">
+                    <div class="card doctor-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Dr. ${doctor.first_name} ${doctor.last_name}</h5>
+                            <h6 class="card-subtitle mb-2 text-primary">${doctor.specialization || 'General Practice'}</h6>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="bi bi-hospital"></i> ${doctor.hospital_branch || 'Main Hospital'}<br>
+                                    <i class="bi bi-clock-history"></i> ${experienceText}<br>
+                                    ${doctor.bio ? doctor.bio.substring(0, 100) + '...' : 'No bio available'}
+                                </small>
+                            </p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <button class="btn btn-sm btn-primary" onclick="viewDoctorDetails(${doctor.doctor_id})">View Details</button>
+                            <button class="btn btn-sm btn-success" onclick="bookDoctor(${doctor.doctor_id}, '${doctor.first_name}', '${doctor.last_name}')">Book Appointment</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    // Search doctors
+    function searchDoctors() {
+        const specialization = document.getElementById('searchSpecialization').value;
+        const name = document.getElementById('searchDoctorName').value.toLowerCase();
+        const branch = document.getElementById('searchBranch').value;
+        
+        let filteredDoctors = window.allDoctors;
+        
+        if (specialization) {
+            filteredDoctors = filteredDoctors.filter(d => d.specialization === specialization);
+        }
+        
+        if (name) {
+            filteredDoctors = filteredDoctors.filter(d => 
+                d.first_name.toLowerCase().includes(name) || 
+                d.last_name.toLowerCase().includes(name)
+            );
+        }
+        
+        if (branch) {
+            filteredDoctors = filteredDoctors.filter(d => d.hospital_branch === branch);
+        }
+        
+        displayDoctors(filteredDoctors);
+    }
+    
+    // View doctor details
+    async function viewDoctorDetails(doctorId) {
+        try {
+            const response = await fetch(`http://localhost:5000/doctors/${doctorId}`);
+            const doctor = await response.json();
+            
+            const modalHtml = `
+                <div class="modal fade" id="doctorDetailsModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Doctor Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <h4>Dr. ${doctor.first_name} ${doctor.last_name}</h4>
+                                <p><strong>Specialization:</strong> ${doctor.specialization || 'General Practice'}</p>
+                                <p><strong>Experience:</strong> ${doctor.years_experience || 0} years</p>
+                                <p><strong>Hospital Branch:</strong> ${doctor.hospital_branch || 'Main Hospital'}</p>
+                                <p><strong>Phone:</strong> ${doctor.phone_number || 'Not available'}</p>
+                                <p><strong>Email:</strong> ${doctor.email || 'Not available'}</p>
+                                <p><strong>Bio:</strong><br>${doctor.bio || 'No bio available'}</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" onclick="bookDoctor(${doctorId}, '${doctor.first_name}', '${doctor.last_name}')">Book Appointment</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('doctorDetailsModal');
+            if (existingModal) existingModal.remove();
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('doctorDetailsModal'));
+            modal.show();
+            
+        } catch (error) {
+            console.error('Failed to load doctor details:', error);
+            alert('Failed to load doctor details');
+        }
+    }
+    
+    // Book appointment with specific doctor
+    function bookDoctor(doctorId, firstName, lastName) {
+        openMakeAppointmentModal();
+        // Set the selected doctor after a short delay to ensure the modal is loaded
+        setTimeout(() => {
+            const select = document.getElementById('appointmentDoctor');
+            select.value = doctorId;
+            // Trigger change event if needed
+            select.dispatchEvent(new Event('change'));
+        }, 500);
+    }
+    
+    // Patient appointment form submission
+    document.getElementById('makeAppointmentForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            patient_id: parseInt(currentPatientId),
+            doctor_id: parseInt(document.getElementById('appointmentDoctor').value),
+            appointment_date: document.getElementById('appointmentDate').value,
+            appointment_time: document.getElementById('appointmentTime').value,
+            reason_for_visit: document.getElementById('appointmentReason').value,
+            description: document.getElementById('appointmentDescription').value.trim(),
+            status: 'Scheduled'
+        };
+        
+        if (!formData.doctor_id || !formData.appointment_date || !formData.appointment_time || !formData.reason_for_visit) {
+            alert('Please fill all required fields');
+            return;
+        }
+        
+        try {
+            const response = await fetch('http://localhost:5000/appointments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Appointment failed: ${errorText}`);
+            }
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('makeAppointmentModal'));
+            modal.hide();
+            alert('Appointment submitted successfully! Please wait for doctor confirmation.');
+            
+            if (document.getElementById('appointments-content').style.display === 'block') {
+                loadAllAppointments();
+            } else if (document.getElementById('dashboard-content').style.display === 'block') {
+                loadAppointmentsData();
+            }
+            
+        } catch (error) {
+            console.error('Appointment failed:', error);
+            alert(`Appointment failed: ${error.message}`);
+        }
+    });
+    
+    // Logout
+    function logout() {
+        localStorage.removeItem('patient_id');
+        localStorage.removeItem('currentUser');
+        window.location.href = 'index.html';
+    }
+    </script>
+</body>
+</html>
+[file content end]

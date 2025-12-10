@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Management System - Login & Register</title>
+    <!-- Add config.js reference -->
+    <script src="js/config.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .auth-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+        .auth-tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+        }
+        .auth-tab {
+            flex: 1;
+            text-align: center;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 18px;
+        }
+        .auth-tab.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+        .auth-form {
+            padding: 40px;
+        }
+        .role-selection {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .role-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: #f8f9fa;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .role-btn:hover {
+            border-color: #667eea;
+        }
+        .role-btn.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+        .form-step {
+            display: none;
+        }
+        .form-step.active {
+            display: block;
+        }
+        .password-strength {
+            height: 5px;
+            background: #eee;
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .weak { background: #ff4757; }
+        .medium { background: #ffa502; }
+        .strong { background: #2ed573; }
+        .api-status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+        }
+        .api-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .api-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="auth-container">
+            <!-- API Status Display -->
+            <div id="apiStatus" class="api-status"></div>
+            
+            <!-- Tabs -->
+            <div class="auth-tabs">
+                <div class="auth-tab active" onclick="switchAuth('login', this)">Login</div>
+                <div class="auth-tab" onclick="switchAuth('register', this)">Register</div>
+            </div>
+            
+            <!-- Login Form -->
+            <div id="login-form" class="auth-form">
+                <h3 class="text-center mb-4">Welcome Back</h3>
+                
+                <div class="role-selection mb-4">
+                    <div class="role-btn active" onclick="selectRole('patient', 'login', this)">Patient</div>
+                    <div class="role-btn" onclick="selectRole('doctor', 'login', this)">Doctor</div>
+                    <div class="role-btn" onclick="selectRole('admin', 'login', this)">Admin</div>
+                </div>
+                
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label class="form-label">User ID</label>
+                        <input type="text" class="form-control" id="loginUserId" 
+                               placeholder="Enter User ID (e.g., P001, D001)" required>
+                        <div class="form-text">
+                            Patient ID Example: P001, Doctor ID Example: D001
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" id="loginPassword" 
+                               placeholder="Enter password" required>
+                        <div class="form-text">
+                            <small>Demo system, any password works</small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg">Login</button>
+                    </div>
+                    
+                    <div class="text-center">
+                        <small class="text-muted">Test User IDs:</small><br>
+                        <small>Patients: P001, P002 (need registration first)</small><br>
+                        <small>Doctors: 1, 2, 3 (use doctor ID)</small>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Register Form -->
+            <div id="register-form" class="auth-form" style="display: none;">
+                <h3 class="text-center mb-4">Create Patient Account</h3>
+                
+                <p class="text-center mb-4">Currently only patient registration is supported</p>
+                
+                <!-- Patient Registration Form -->
+                <form id="patientRegisterForm" class="form-step active">
+                    <h5 class="mb-3">Patient Information</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Gender</label>
+                            <select class="form-select" id="gender" name="gender">
+                                <option value="">Select</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="date_of_birth" name="date_of_birth">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="contact_number" name="contact_number">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <input type="text" class="form-control" id="address" name="address">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Insurance Provider</label>
+                            <input type="text" class="form-control" id="insurance_provider" name="insurance_provider">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Insurance Number</label>
+                            <input type="text" class="form-control" id="insurance_number" name="insurance_number">
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">Register Patient Account</button>
+                    </div>
+                    
+                    <div class="mt-3 text-center">
+                        <small class="text-muted">After successful registration, a patient ID will be assigned. Please keep it safe.</small>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Test API connection
+        console.log("Testing API connection...");
+        fetch('http://localhost:5000/doctors')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('✅ API connection successful! Doctor list:', data);
+                showApiStatus('✅ API connection successful! Backend service is running.', 'success');
+            })
+            .catch(error => {
+                console.error('❌ API connection failed:', error);
+                showApiStatus('❌ Unable to connect to backend service. Please ensure backend is running.', 'error');
+            });
+        
+        function showApiStatus(message, type) {
+            const statusDiv = document.getElementById('apiStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `api-status api-${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        // Current selected role and mode
+        let currentRole = 'patient';
+        let currentMode = 'login';
+        
+        // Switch login/register
+        function switchAuth(mode, clickedTab = null) {
+            currentMode = mode;
+            
+            // Update tabs
+            document.querySelectorAll('.auth-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // If clicked tab exists, activate it; otherwise activate based on mode
+            if (clickedTab) {
+                clickedTab.classList.add('active');
+            } else {
+                // Activate corresponding tab based on mode
+                const tabs = document.querySelectorAll('.auth-tab');
+                if (mode === 'login') {
+                    tabs[0].classList.add('active');
+                } else {
+                    tabs[1].classList.add('active');
+                }
+            }
+            
+            // Switch form display
+            document.getElementById('login-form').style.display = 
+                mode === 'login' ? 'block' : 'none';
+            document.getElementById('register-form').style.display = 
+                mode === 'register' ? 'block' : 'none';
+            
+            // Reset form
+            if (mode === 'login') {
+                document.getElementById('loginForm').reset();
+            }
+        }
+        
+        // Select role
+        function selectRole(role, mode, clickedButton = null) {
+            currentRole = role;
+            
+            // Update button styles
+            let buttons;
+            if (clickedButton) {
+                buttons = clickedButton.parentElement.querySelectorAll('.role-btn');
+                buttons.forEach(btn => btn.classList.remove('active'));
+                clickedButton.classList.add('active');
+            } else {
+                // If no button clicked, find corresponding container based on mode
+                const container = mode === 'login' 
+                    ? document.querySelector('#login-form .role-selection')
+                    : document.querySelector('#register-form .role-selection');
+                buttons = container.querySelectorAll('.role-btn');
+                buttons.forEach(btn => btn.classList.remove('active'));
+                // Activate first button corresponding to the role
+                const targetBtn = Array.from(buttons).find(btn => 
+                    btn.getAttribute('onclick') && 
+                    btn.getAttribute('onclick').includes(`'${role}'`)
+                );
+                if (targetBtn) {
+                    targetBtn.classList.add('active');
+                } else if (buttons.length > 0) {
+                    buttons[0].classList.add('active');
+                }
+            }
+            
+            // If in register mode, switch forms
+            if (mode === 'register') {
+                document.querySelectorAll('.form-step').forEach(step => {
+                    step.classList.remove('active');
+                });
+                const formId = `${role}RegisterForm`;
+                const form = document.getElementById(formId);
+                if (form) {
+                    form.classList.add('active');
+                }
+            }
+        }
+        
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const userId = document.getElementById('loginUserId').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!userId) {
+                alert('Please enter User ID');
+                return;
+            }
+            
+            const role = currentRole;
+            
+            // Save user info to localStorage
+            localStorage.setItem('currentUser', JSON.stringify({
+                id: userId,
+                role: role,
+                loginTime: new Date().toISOString()
+            }));
+            
+            // Save corresponding ID based on role
+            if (role === 'patient') {
+                const patientId = userId.replace(/\D/g, '');
+                localStorage.setItem('patient_id', patientId);
+            } else if (role === 'doctor') {
+                const doctorId = userId.replace(/\D/g, '');
+                localStorage.setItem('doctor_id', doctorId);
+            } else if (role === 'admin') {
+                // Admin doesn't need special ID, use username
+                localStorage.setItem('admin_id', userId);
+            }
+            
+            // Redirect to corresponding page
+            window.location.href = `${role}.html`;
+        });
+        
+        // Patient registration form submission
+        document.getElementById('patientRegisterForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Collect form data
+            const formData = {
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                gender: document.getElementById('gender').value,
+                date_of_birth: document.getElementById('date_of_birth').value,
+                contact_number: document.getElementById('contact_number').value,
+                address: document.getElementById('address').value,
+                email: document.getElementById('email').value,
+                insurance_provider: document.getElementById('insurance_provider').value,
+                insurance_number: document.getElementById('insurance_number').value
+            };
+            
+            // Validate required fields
+            if (!formData.first_name || !formData.last_name) {
+                alert('First name and last name are required');
+                return;
+            }
+            
+            try {
+                // Call backend registration API
+                const response = await fetch('http://localhost:5000/patients/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Registration failed: ${response.status} - ${errorText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.patient_id) {
+                    alert(`Registration successful! Your patient ID is: P${result.patient_id}\nPlease remember this ID for login.`);
+                    
+                    // Auto-fill login form
+                    document.getElementById('loginUserId').value = `P${result.patient_id}`;
+                    document.getElementById('loginPassword').value = '123456'; // Default password
+                    
+                    // Save patient ID to localStorage
+                    localStorage.setItem('patient_id', result.patient_id);
+                    
+                    // Switch to login page
+                    switchAuth('login');
+                } else {
+                    alert('Registration failed: No patient ID received');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert(`Registration failed: ${error.message}\n\nPlease check:\n1. Is backend service running?\n2. Is network connection normal?`);
+            }
+        });
+        
+        // Page load initialization
+        window.onload = function() {
+            // Check if already logged in
+            const userInfo = localStorage.getItem('currentUser');
+            if (userInfo) {
+                const user = JSON.parse(userInfo);
+                const confirmMsg = `Detected you are logged in as ${user.role} (ID: ${user.id}). Go directly to the system?`;
+                if (confirm(confirmMsg)) {
+                    window.location.href = `${user.role}.html`;
+                }
+            }
+        };
+    </script>
+</body>
+</html>

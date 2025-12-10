@@ -1,0 +1,1516 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Center - Hospital Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .sidebar { 
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            min-height: 100vh;
+            padding-top: 20px;
+        }
+        .nav-link { color: white !important; padding: 12px 20px; }
+        .nav-link:hover { background: rgba(255,255,255,0.1); }
+        .nav-link.active { background: rgba(255,255,255,0.2); }
+        .card { border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
+        .doctor-header { 
+            background: linear-gradient(90deg, #11998e, #38ef7d);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        /* Search form styles */
+        .search-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .patient-card {
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+        .patient-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        /* 添加调试信息样式 */
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Debug info -->
+    <div id="debugInfo" class="debug-info"></div>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-4">
+                    <h4 class="text-center">👨‍⚕️ Doctor Center</h4>
+                    <p class="text-center text-light" id="doctor-id-display">ID: Loading...</p>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="loadDashboard(); return false;">
+                            🏠 Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="loadSchedule(); return false;">
+                            📅 Today's Schedule
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="loadPatients(); return false;">
+                            👥 My Patients
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="loadSearchPatients(); return false;">
+                            🔍 Search Patients
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="logout(); return false;">
+                            🚪 Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Main content area -->
+            <div class="col-md-9 col-lg-10 p-4">
+                <!-- Page title -->
+                <h2 class="mb-4" id="page-title">Doctor Dashboard</h2>
+                
+                <!-- Doctor info header (only shown in dashboard) -->
+                <div id="doctor-header" class="doctor-header" style="display: block;">
+                    <h2 id="doctor-name">Loading...</h2>
+                    <p class="mb-0" id="doctor-info">Loading...</p>
+                </div>
+                
+                <!-- Dashboard content -->
+                <div id="dashboard-content">
+                    <div class="row">
+                        <!-- Today's appointments -->
+                        <div class="col-md-8 mb-4">
+                            <div class="card">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0" id="schedule-title">Today's Schedule (Loading...)</h5>
+                                    <span class="badge bg-light text-primary" id="schedule-count">0 appointments</span>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Search Form for Today's Schedule -->
+                                    <div class="search-form mb-4">
+                                        <h6>Filter Schedule</h6>
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Time Slot</label>
+                                                <select class="form-select" id="filterScheduleTime">
+                                                    <option value="">All Times</option>
+                                                    <option value="morning">Morning (08:00-12:00)</option>
+                                                    <option value="afternoon">Afternoon (13:00-17:00)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Status</label>
+                                                <select class="form-select" id="filterScheduleStatus">
+                                                    <option value="">All Status</option>
+                                                    <option value="Scheduled">Scheduled</option>
+                                                    <option value="In Progress">In Progress</option>
+                                                    <option value="Completed">Completed</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">&nbsp;</label>
+                                                <button class="btn btn-primary w-100" onclick="filterTodaySchedule()">Filter</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Time</th>
+                                                    <th>Patient</th>
+                                                    <th>Reason</th>
+                                                    <th>Status</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="today-schedule-table">
+                                                <tr><td colspan="5">Loading...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick statistics -->
+                        <div class="col-md-4 mb-4">
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0">Monthly Statistics</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center mb-4">
+                                        <h1 class="display-4 text-primary" id="month-patients">0</h1>
+                                        <p class="text-muted">Patients this month</p>
+                                    </div>
+                                    <hr>
+                                    <p><strong>📊 Status Distribution</strong></p>
+                                    <div class="mb-2">
+                                        <span class="badge bg-success me-2">Completed</span>
+                                        <span class="float-end" id="completed-count">0 cases</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-warning me-2">In Progress</span>
+                                        <span class="float-end" id="inprogress-count">0 cases</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-danger me-2">Cancelled</span>
+                                        <span class="float-end" id="cancelled-count">0 cases</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent patients -->
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">Recent Patients</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row" id="recent-patients">
+                                <div class="col-md-12 text-center">
+                                    <p>Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Today's schedule details page -->
+                <div id="schedule-content" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Today's Schedule Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Patient</th>
+                                            <th>Contact</th>
+                                            <th>Reason</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="full-schedule-table">
+                                        <tr><td colspan="6">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- My patients page -->
+                <div id="patients-content" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">My Patients List</h5>
+                            <button class="btn btn-light btn-sm" onclick="exportPatientList()">📄 Export</button>
+                        </div>
+                        <div class="card-body">
+                            <!-- Search Form for Patients -->
+                            <div class="search-form mb-4">
+                                <h6>Search Patients</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Name</label>
+                                        <input type="text" class="form-control" id="searchPatientName" placeholder="Patient name">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Gender</label>
+                                        <select class="form-select" id="searchPatientGender">
+                                            <option value="">All Genders</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Age Range</label>
+                                        <select class="form-select" id="searchPatientAge">
+                                            <option value="">All Ages</option>
+                                            <option value="0-18">0-18 years</option>
+                                            <option value="19-40">19-40 years</option>
+                                            <option value="41-60">41-60 years</option>
+                                            <option value="61+">61+ years</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button class="btn btn-primary w-100" onclick="searchMyPatients()">Search</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Patient ID</th>
+                                            <th>Name</th>
+                                            <th>Gender</th>
+                                            <th>Age</th>
+                                            <th>Contact</th>
+                                            <th>Last Visit</th>
+                                            <th>Visit Count</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="my-patients-table">
+                                        <tr><td colspan="8">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Search Patients Page -->
+                <div id="search-patients-content" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Search All Patients</h5>
+                            <button class="btn btn-light btn-sm" onclick="loadAdvancedSearch()">🔍 Advanced Search</button>
+                        </div>
+                        <div class="card-body">
+                            <!-- Advanced Search Form -->
+                            <div class="search-form mb-4">
+                                <h6>Advanced Patient Search</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Patient ID</label>
+                                        <input type="text" class="form-control" id="searchPatientId" placeholder="P001, P002, etc.">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Name</label>
+                                        <input type="text" class="form-control" id="searchAllPatientName" placeholder="First or last name">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Gender</label>
+                                        <select class="form-select" id="searchAllPatientGender">
+                                            <option value="">All Genders</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Insurance Provider</label>
+                                        <input type="text" class="form-control" id="searchInsurance" placeholder="Insurance company">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Date of Birth Range</label>
+                                        <input type="date" class="form-control" id="searchDobFrom" placeholder="From">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <input type="date" class="form-control" id="searchDobTo" placeholder="To">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Registration Date</label>
+                                        <input type="date" class="form-control" id="searchRegDate">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button class="btn btn-primary w-100" onclick="searchAllPatients()">Search</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Search Results -->
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Patient ID</th>
+                                            <th>Name</th>
+                                            <th>Gender</th>
+                                            <th>Age</th>
+                                            <th>Phone</th>
+                                            <th>Insurance</th>
+                                            <th>Registration Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="search-patients-table">
+                                        <tr><td colspan="8">Use the search form to find patients</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointment modal -->
+    <div class="modal fade" id="doctorAppointmentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="doctorAppointmentTitle">Create Appointment for Patient</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="doctorAppointmentForm">
+                        <input type="hidden" id="doctorAppointmentPatientId">
+                        <div class="mb-3">
+                            <label class="form-label">Patient</label>
+                            <input type="text" class="form-control" id="doctorPatientName" disabled>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Appointment Date</label>
+                            <input type="date" class="form-control" id="doctorAppointmentDate" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Appointment Time</label>
+                            <select class="form-select" id="doctorAppointmentTime" required>
+                                <option value="">Select time</option>
+                                <option value="08:00">08:00</option>
+                                <option value="08:30">08:30</option>
+                                <option value="09:00">09:00</option>
+                                <option value="09:30">09:30</option>
+                                <option value="10:00">10:00</option>
+                                <option value="10:30">10:30</option>
+                                <option value="11:00">11:00</option>
+                                <option value="11:30">11:30</option>
+                                <option value="13:00">13:00</option>
+                                <option value="13:30">13:30</option>
+                                <option value="14:00">14:00</option>
+                                <option value="14:30">14:30</option>
+                                <option value="15:00">15:00</option>
+                                <option value="15:30">15:30</option>
+                                <option value="16:00">16:00</option>
+                                <option value="16:30">16:30</option>
+                                <option value="17:00">17:00</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Reason for Visit</label>
+                            <select class="form-select" id="doctorAppointmentReason" required>
+                                <option value="">Select reason</option>
+                                <option value="Regular Checkup">Regular Checkup</option>
+                                <option value="Follow-up">Follow-up</option>
+                                <option value="Treatment">Treatment</option>
+                                <option value="Consultation">Consultation</option>
+                                <option value="Physical Exam">Physical Exam</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" id="doctorAppointmentDescription" rows="3" placeholder="Notes"></textarea>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Create Appointment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Patient Details Modal -->
+    <div class="modal fade" id="patientDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Patient Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="patientDetailsContent">
+                    Loading...
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="createAppointmentFromModal()">Create Appointment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ================ Global Functions ================
+        
+        // Debug function: show debug info
+        function showDebugInfo(message) {
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.textContent = message;
+            debugDiv.style.display = 'block';
+        }
+        
+        // Debug function: log to console and debug info
+        function debugLog(message) {
+            console.log(message);
+            showDebugInfo(message);
+        }
+        
+        // Get current logged-in doctor ID from localStorage
+        let currentDoctorId = localStorage.getItem('doctor_id');
+        
+        // If no doctor ID, try to extract from currentUser
+        if (!currentDoctorId) {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (currentUser.role === 'doctor' && currentUser.id) {
+                // Extract numeric ID, e.g., D001 -> 1
+                currentDoctorId = currentUser.id.replace(/\D/g, '');
+                localStorage.setItem('doctor_id', currentDoctorId);
+            }
+        }
+        
+        // If no doctor ID, redirect to login page
+        if (!currentDoctorId) {
+            alert('Please login first!');
+            window.location.href = 'index.html';
+        }
+        
+        // Execute after page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Display doctor ID
+            document.getElementById('doctor-id-display').textContent = `ID: D${currentDoctorId.toString().padStart(3, '0')}`;
+            
+            // Load dashboard by default
+            loadDashboard();
+        });
+        
+        // ================ Page Navigation Functions ================
+        
+        function loadDashboard() {
+            // Update page title
+            document.getElementById('page-title').textContent = 'Doctor Dashboard';
+            
+            // Show/hide corresponding content areas
+            document.getElementById('dashboard-content').style.display = 'block';
+            document.getElementById('schedule-content').style.display = 'none';
+            document.getElementById('patients-content').style.display = 'none';
+            document.getElementById('search-patients-content').style.display = 'none';
+            document.getElementById('doctor-header').style.display = 'block';
+            
+            // Update navigation active state
+            updateNavActive('dashboard');
+            
+            // Load data
+            loadDoctorInfo();
+            loadTodaySchedule();
+            loadDoctorStats();
+            loadRecentPatients();
+        }
+        
+        function loadSchedule() {
+            // Update page title
+            document.getElementById('page-title').textContent = "Today's Schedule";
+            
+            // Show/hide corresponding content areas
+            document.getElementById('dashboard-content').style.display = 'none';
+            document.getElementById('schedule-content').style.display = 'block';
+            document.getElementById('patients-content').style.display = 'none';
+            document.getElementById('search-patients-content').style.display = 'none';
+            document.getElementById('doctor-header').style.display = 'none';
+            
+            // Update navigation active state
+            updateNavActive('schedule');
+            
+            // Load detailed schedule data
+            loadFullSchedule();
+        }
+        
+        function loadPatients() {
+            // Update page title
+            document.getElementById('page-title').textContent = 'My Patients';
+            
+            // Show/hide corresponding content areas
+            document.getElementById('dashboard-content').style.display = 'none';
+            document.getElementById('schedule-content').style.display = 'none';
+            document.getElementById('patients-content').style.display = 'block';
+            document.getElementById('search-patients-content').style.display = 'none';
+            document.getElementById('doctor-header').style.display = 'none';
+            
+            // Update navigation active state
+            updateNavActive('patients');
+            
+            // Load all patient data
+            loadAllPatients();
+        }
+        
+        function loadSearchPatients() {
+            // Update page title
+            document.getElementById('page-title').textContent = 'Search Patients';
+            
+            // Show/hide corresponding content areas
+            document.getElementById('dashboard-content').style.display = 'none';
+            document.getElementById('schedule-content').style.display = 'none';
+            document.getElementById('patients-content').style.display = 'none';
+            document.getElementById('search-patients-content').style.display = 'block';
+            document.getElementById('doctor-header').style.display = 'none';
+            
+            // Update navigation active state
+            updateNavActive('search-patients');
+            
+            // Load initial search data if needed
+            if (!window.allPatientsData) {
+                loadAllPatientsForSearch();
+            }
+        }
+        
+        function updateNavActive(page) {
+            // Remove all active classes
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Activate corresponding navigation based on page parameter
+            const navLinks = document.querySelectorAll('.nav-link');
+            if (page === 'dashboard') {
+                navLinks[0].classList.add('active');
+            } else if (page === 'schedule') {
+                navLinks[1].classList.add('active');
+            } else if (page === 'patients') {
+                navLinks[2].classList.add('active');
+            } else if (page === 'search-patients') {
+                navLinks[3].classList.add('active');
+            }
+        }
+        
+        // ================ Data Loading Functions ================
+        
+        // Load doctor information
+        async function loadDoctorInfo() {
+            try {
+                debugLog(`Getting doctor info: /doctors/${currentDoctorId}`);
+                const response = await fetch(`http://localhost:5000/doctors/${currentDoctorId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const doctorData = await response.json();
+                
+                // Update doctor info header
+                document.getElementById('doctor-name').textContent = `Dr. ${doctorData.first_name} ${doctorData.last_name}`;
+                document.getElementById('doctor-info').textContent = 
+                    `${doctorData.specialization || 'General'} | ${doctorData.years_experience || 0} years experience | ${doctorData.hospital_branch || 'Main Hospital'}`;
+                
+                debugLog('Doctor info loaded successfully');
+                
+            } catch (error) {
+                console.error('Failed to load doctor info:', error);
+                debugLog(`Failed to load doctor info: ${error.message}`);
+                document.getElementById('doctor-name').textContent = 'Dr. Unknown';
+                document.getElementById('doctor-info').textContent = 'Failed to load information';
+            }
+        }
+        
+        // Load today's schedule (displayed on dashboard)
+        async function loadTodaySchedule() {
+            try {
+                debugLog(`Getting today's schedule: /doctors/${currentDoctorId}/schedule`);
+                const response = await fetch(`http://localhost:5000/doctors/${currentDoctorId}/schedule`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const schedule = await response.json();
+                
+                window.todaySchedule = schedule; // Store for filtering
+                
+                // Update title and count
+                const today = new Date().toLocaleDateString('en-US');
+                document.getElementById('schedule-title').textContent = `Today's Schedule (${today})`;
+                document.getElementById('schedule-count').textContent = `${schedule.length} appointments`;
+                
+                displayTodaySchedule(schedule);
+                
+            } catch (error) {
+                console.error('Failed to load today\'s schedule:', error);
+                debugLog(`Failed to load today's schedule: ${error.message}`);
+                document.getElementById('today-schedule-table').innerHTML = 
+                    '<tr><td colspan="5" class="text-danger">Failed to load</td></tr>';
+            }
+        }
+        
+        // Display today's schedule with filtering
+        function displayTodaySchedule(schedule) {
+            const tableBody = document.getElementById('today-schedule-table');
+            
+            if (schedule.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No schedule today</td></tr>';
+                debugLog('No schedule today');
+                return;
+            }
+            
+            let tableHtml = '';
+            schedule.forEach(appointment => {
+                // Determine status badge
+                let statusBadge;
+                if (appointment.status === 'Completed') {
+                    statusBadge = '<span class="badge bg-success">Completed</span>';
+                } else if (appointment.status === 'In Progress') {
+                    statusBadge = '<span class="badge bg-warning">In Progress</span>';
+                } else if (appointment.status === 'Scheduled') {
+                    statusBadge = '<span class="badge bg-info">Scheduled</span>';
+                } else if (appointment.status === 'Cancelled') {
+                    statusBadge = '<span class="badge bg-danger">Cancelled</span>';
+                } else {
+                    statusBadge = `<span class="badge bg-secondary">${appointment.status}</span>`;
+                }
+                
+                // Action button
+                let actionButton;
+                if (appointment.status === 'Scheduled') {
+                    actionButton = `<button class="btn btn-sm btn-primary" onclick="startAppointment(${appointment.appointment_id})">Start</button>`;
+                } else if (appointment.status === 'In Progress') {
+                    actionButton = `<button class="btn btn-sm btn-success" onclick="completeAppointment(${appointment.appointment_id})">Complete</button>`;
+                } else {
+                    actionButton = `<button class="btn btn-sm btn-outline-secondary" disabled>--</button>`;
+                }
+                
+                tableHtml += `
+                    <tr>
+                        <td>${appointment.appointment_time || '--'}</td>
+                        <td>${appointment.patient_first_name || ''} ${appointment.patient_last_name || ''} (P${appointment.patient_id})</td>
+                        <td>${appointment.reason_for_visit || 'Regular Checkup'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${actionButton}</td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = tableHtml;
+            debugLog(`Today's schedule loaded successfully: ${schedule.length} appointments`);
+        }
+        
+        // Filter today's schedule
+        function filterTodaySchedule() {
+            const timeSlot = document.getElementById('filterScheduleTime').value;
+            const status = document.getElementById('filterScheduleStatus').value;
+            
+            let filteredSchedule = window.todaySchedule;
+            
+            if (timeSlot === 'morning') {
+                filteredSchedule = filteredSchedule.filter(a => {
+                    const time = a.appointment_time;
+                    return time >= '08:00' && time <= '12:00';
+                });
+            } else if (timeSlot === 'afternoon') {
+                filteredSchedule = filteredSchedule.filter(a => {
+                    const time = a.appointment_time;
+                    return time >= '13:00' && time <= '17:00';
+                });
+            }
+            
+            if (status) {
+                filteredSchedule = filteredSchedule.filter(a => a.status === status);
+            }
+            
+            displayTodaySchedule(filteredSchedule);
+        }
+        
+        // Load detailed schedule
+        async function loadFullSchedule() {
+            try {
+                debugLog(`Getting detailed schedule: /doctors/${currentDoctorId}/schedule`);
+                const response = await fetch(`http://localhost:5000/doctors/${currentDoctorId}/schedule`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const schedule = await response.json();
+                displayFullSchedule(schedule);
+                
+            } catch (error) {
+                console.error('Failed to load detailed schedule:', error);
+                debugLog(`Failed to load detailed schedule: ${error.message}`);
+                document.getElementById('full-schedule-table').innerHTML = 
+                    '<tr><td colspan="6" class="text-danger">Failed to load</td></tr>';
+            }
+        }
+        
+        // Display full schedule
+        function displayFullSchedule(schedule) {
+            const tableBody = document.getElementById('full-schedule-table');
+            
+            if (schedule.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No schedule today</td></tr>';
+                debugLog('No schedule today');
+                return;
+            }
+            
+            let tableHtml = '';
+            schedule.forEach(appointment => {
+                let statusBadge;
+                if (appointment.status === 'Completed') {
+                    statusBadge = '<span class="badge bg-success">Completed</span>';
+                } else if (appointment.status === 'In Progress') {
+                    statusBadge = '<span class="badge bg-warning">In Progress</span>';
+                } else if (appointment.status === 'Scheduled') {
+                    statusBadge = '<span class="badge bg-info">Scheduled</span>';
+                } else if (appointment.status === 'Cancelled') {
+                    statusBadge = '<span class="badge bg-danger">Cancelled</span>';
+                } else {
+                    statusBadge = `<span class="badge bg-secondary">${appointment.status}</span>`;
+                }
+                
+                let actionButton;
+                if (appointment.status === 'Scheduled') {
+                    actionButton = `
+                        <button class="btn btn-sm btn-primary" onclick="startAppointment(${appointment.appointment_id})">Start</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="cancelAppointment(${appointment.appointment_id})">Cancel</button>
+                    `;
+                } else if (appointment.status === 'In Progress') {
+                    actionButton = `
+                        <button class="btn btn-sm btn-success" onclick="completeAppointment(${appointment.appointment_id})">Complete</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="viewAppointment(${appointment.appointment_id})">Details</button>
+                    `;
+                } else {
+                    actionButton = `<button class="btn btn-sm btn-outline-secondary" onclick="viewAppointment(${appointment.appointment_id})">Details</button>`;
+                }
+                
+                tableHtml += `
+                    <tr>
+                        <td>${appointment.appointment_time || '--'}</td>
+                        <td>${appointment.patient_first_name || ''} ${appointment.patient_last_name || ''}</td>
+                        <td>${appointment.patient_contact || '--'}</td>
+                        <td>${appointment.reason_for_visit || 'Regular Checkup'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${actionButton}</td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = tableHtml;
+            debugLog(`Detailed schedule loaded successfully: ${schedule.length} appointments`);
+        }
+        
+        // Load doctor statistics
+        async function loadDoctorStats() {
+            try {
+                // Get current month statistics
+                const currentMonth = new Date().getMonth() + 1;
+                const currentYear = new Date().getFullYear();
+                
+                debugLog(`Getting all doctor appointments: /doctors/${currentDoctorId}/appointments`);
+                const response = await fetch(`http://localhost:5000/doctors/${currentDoctorId}/appointments`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const appointments = await response.json();
+                
+                // Filter appointments for current month
+                const monthAppointments = appointments.filter(appointment => {
+                    if (!appointment.appointment_date) return false;
+                    const appointmentDate = new Date(appointment.appointment_date);
+                    return appointmentDate.getMonth() + 1 === currentMonth && 
+                           appointmentDate.getFullYear() === currentYear;
+                });
+                
+                // Calculate statistics
+                const monthPatients = new Set(monthAppointments.map(a => a.patient_id)).size;
+                const completed = monthAppointments.filter(a => a.status === 'Completed').length;
+                const inProgress = monthAppointments.filter(a => a.status === 'In Progress').length;
+                const cancelled = monthAppointments.filter(a => a.status === 'Cancelled').length;
+                
+                // Update statistics display
+                document.getElementById('month-patients').textContent = monthPatients;
+                document.getElementById('completed-count').textContent = `${completed} cases`;
+                document.getElementById('inprogress-count').textContent = `${inProgress} cases`;
+                document.getElementById('cancelled-count').textContent = `${cancelled} cases`;
+                
+                debugLog(`Statistics loaded successfully: ${monthPatients} patients, ${completed} completed, ${inProgress} in progress, ${cancelled} cancelled`);
+                
+            } catch (error) {
+                console.error('Failed to load statistics:', error);
+                debugLog(`Failed to load statistics: ${error.message}`);
+                // Use default data
+                document.getElementById('month-patients').textContent = '0';
+                document.getElementById('completed-count').textContent = '0 cases';
+                document.getElementById('inprogress-count').textContent = '0 cases';
+                document.getElementById('cancelled-count').textContent = '0 cases';
+            }
+        }
+        
+        // Load recent patients
+        async function loadRecentPatients() {
+            try {
+                debugLog(`Getting recent patients: /doctors/${currentDoctorId}/patients`);
+                const response = await fetch(`http://localhost:5000/doctors/${currentDoctorId}/patients`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const patientsData = await response.json();
+                const container = document.getElementById('recent-patients');
+                
+                if (patientsData.length === 0) {
+                    container.innerHTML = '<div class="col-md-12 text-center"><p>No patient records</p></div>';
+                    debugLog('No patient records');
+                    return;
+                }
+                
+                // Only show the most recent 4 patients
+                const recentPatients = patientsData.slice(0, 4);
+                let html = '';
+                
+                recentPatients.forEach(patientInfo => {
+                    const patient = patientInfo.patient;
+                    const latestAppointment = patientInfo.appointments[0];
+                    
+                    html += `
+                        <div class="col-md-3 mb-3">
+                            <div class="card patient-card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">${patient.first_name} ${patient.last_name}</h6>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            ID: P${patient.patient_id}<br>
+                                            Gender: ${patient.gender === 'male' || patient.gender === 'M' ? 'Male' : patient.gender === 'female' || patient.gender === 'F' ? 'Female' : 'Unknown'}<br>
+                                            Last Visit: ${latestAppointment ? latestAppointment.appointment_date : 'No records'}
+                                        </small>
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="viewPatient(${patient.patient_id})">Details</button>
+                                    <button class="btn btn-sm btn-outline-success" onclick="createAppointment(${patient.patient_id}, '${patient.first_name}', '${patient.last_name}')">Appointment</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                debugLog(`Recent patients loaded successfully: ${patientsData.length} patients`);
+                
+            } catch (error) {
+                console.error('Failed to load recent patients:', error);
+                debugLog(`Failed to load recent patients: ${error.message}`);
+                document.getElementById('recent-patients').innerHTML = 
+                    '<div class="col-md-12 text-center"><p class="text-danger">Failed to load</p></div>';
+            }
+        }
+        
+        // Load all patients for "My Patients" page
+        async function loadAllPatients() {
+            try {
+                debugLog(`Getting all patients: /doctors/${currentDoctorId}/patients`);
+                const response = await fetch(`http://localhost:5000/doctors/${currentDoctorId}/patients`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const patientsData = await response.json();
+                window.myPatientsData = patientsData; // Store for searching
+                
+                displayMyPatients(patientsData);
+                
+            } catch (error) {
+                console.error('Failed to load all patients:', error);
+                debugLog(`Failed to load all patients: ${error.message}`);
+                document.getElementById('my-patients-table').innerHTML = 
+                    '<tr><td colspan="8" class="text-danger">Failed to load</td></tr>';
+            }
+        }
+        
+        // Display "My Patients" with search functionality
+        function displayMyPatients(patientsData) {
+            const tableBody = document.getElementById('my-patients-table');
+            
+            if (patientsData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="8" class="text-center">No patient records</td></tr>';
+                debugLog('No patient records');
+                return;
+            }
+            
+            let tableHtml = '';
+            patientsData.forEach(patientInfo => {
+                const patient = patientInfo.patient;
+                const latestAppointment = patientInfo.appointments[0];
+                const visitCount = patientInfo.appointments.length;
+                
+                // Calculate age
+                let age = '--';
+                if (patient.date_of_birth) {
+                    const birthDate = new Date(patient.date_of_birth);
+                    const today = new Date();
+                    age = today.getFullYear() - birthDate.getFullYear();
+                }
+                
+                tableHtml += `
+                    <tr>
+                        <td>P${patient.patient_id}</td>
+                        <td>${patient.first_name} ${patient.last_name}</td>
+                        <td>${patient.gender === 'male' || patient.gender === 'M' ? 'Male' : patient.gender === 'female' || patient.gender === 'F' ? 'Female' : 'Unknown'}</td>
+                        <td>${age}</td>
+                        <td>${patient.contact_number || '--'}</td>
+                        <td>${latestAppointment ? latestAppointment.appointment_date : 'No records'}</td>
+                        <td>${visitCount}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewPatient(${patient.patient_id})">Details</button>
+                            <button class="btn btn-sm btn-outline-success" onclick="createAppointment(${patient.patient_id}, '${patient.first_name}', '${patient.last_name}')">Appointment</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = tableHtml;
+            debugLog(`All patients loaded successfully: ${patientsData.length} patients`);
+        }
+        
+        // Search "My Patients"
+        function searchMyPatients() {
+            const name = document.getElementById('searchPatientName').value.toLowerCase();
+            const gender = document.getElementById('searchPatientGender').value;
+            const ageRange = document.getElementById('searchPatientAge').value;
+            
+            let filteredPatients = window.myPatientsData;
+            
+            if (name) {
+                filteredPatients = filteredPatients.filter(patientInfo => {
+                    const patient = patientInfo.patient;
+                    const fullName = `${patient.first_name} ${patient.last_name}`.toLowerCase();
+                    return fullName.includes(name);
+                });
+            }
+            
+            if (gender) {
+                filteredPatients = filteredPatients.filter(patientInfo => {
+                    const patient = patientInfo.patient;
+                    return patient.gender === gender;
+                });
+            }
+            
+            if (ageRange) {
+                const [minAge, maxAge] = ageRange === '61+' ? [61, 150] : ageRange.split('-').map(Number);
+                filteredPatients = filteredPatients.filter(patientInfo => {
+                    const patient = patientInfo.patient;
+                    if (!patient.date_of_birth) return false;
+                    
+                    const birthDate = new Date(patient.date_of_birth);
+                    const today = new Date();
+                    const age = today.getFullYear() - birthDate.getFullYear();
+                    
+                    return age >= minAge && age <= maxAge;
+                });
+            }
+            
+            displayMyPatients(filteredPatients);
+        }
+        
+        // Load all patients for advanced search
+        async function loadAllPatientsForSearch() {
+            try {
+                debugLog(`Getting all patients for search: /patients`);
+                const response = await fetch(`http://localhost:5000/patients`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const patients = await response.json();
+                window.allPatientsData = patients; // Store for searching
+                
+                debugLog(`All patients loaded for search: ${patients.length} patients`);
+                
+            } catch (error) {
+                console.error('Failed to load all patients for search:', error);
+                debugLog(`Failed to load all patients for search: ${error.message}`);
+            }
+        }
+        
+        // Search all patients
+        function searchAllPatients() {
+            const patientId = document.getElementById('searchPatientId').value.replace(/\D/g, '');
+            const name = document.getElementById('searchAllPatientName').value.toLowerCase();
+            const gender = document.getElementById('searchAllPatientGender').value;
+            const insurance = document.getElementById('searchInsurance').value.toLowerCase();
+            const dobFrom = document.getElementById('searchDobFrom').value;
+            const dobTo = document.getElementById('searchDobTo').value;
+            const regDate = document.getElementById('searchRegDate').value;
+            
+            let filteredPatients = window.allPatientsData || [];
+            
+            if (patientId) {
+                filteredPatients = filteredPatients.filter(p => p.patient_id.toString().includes(patientId));
+            }
+            
+            if (name) {
+                filteredPatients = filteredPatients.filter(p => {
+                    const fullName = `${p.first_name || ''} ${p.last_name || ''}`.toLowerCase();
+                    return fullName.includes(name);
+                });
+            }
+            
+            if (gender) {
+                filteredPatients = filteredPatients.filter(p => p.gender === gender);
+            }
+            
+            if (insurance) {
+                filteredPatients = filteredPatients.filter(p => 
+                    p.insurance_provider && p.insurance_provider.toLowerCase().includes(insurance)
+                );
+            }
+            
+            if (dobFrom) {
+                filteredPatients = filteredPatients.filter(p => {
+                    if (!p.date_of_birth) return false;
+                    return p.date_of_birth >= dobFrom;
+                });
+            }
+            
+            if (dobTo) {
+                filteredPatients = filteredPatients.filter(p => {
+                    if (!p.date_of_birth) return false;
+                    return p.date_of_birth <= dobTo;
+                });
+            }
+            
+            if (regDate) {
+                filteredPatients = filteredPatients.filter(p => p.registration_date === regDate);
+            }
+            
+            displaySearchResults(filteredPatients);
+        }
+        
+        // Display search results
+        function displaySearchResults(patients) {
+            const tableBody = document.getElementById('search-patients-table');
+            
+            if (patients.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="8" class="text-center">No patients found</td></tr>';
+                return;
+            }
+            
+            let tableHtml = '';
+            patients.forEach(patient => {
+                // Calculate age
+                let age = '--';
+                if (patient.date_of_birth) {
+                    const birthDate = new Date(patient.date_of_birth);
+                    const today = new Date();
+                    age = today.getFullYear() - birthDate.getFullYear();
+                }
+                
+                tableHtml += `
+                    <tr>
+                        <td>P${patient.patient_id}</td>
+                        <td>${patient.first_name || ''} ${patient.last_name || ''}</td>
+                        <td>${patient.gender === 'male' || patient.gender === 'M' ? 'Male' : patient.gender === 'female' || patient.gender === 'F' ? 'Female' : 'Unknown'}</td>
+                        <td>${age}</td>
+                        <td>${patient.contact_number || '--'}</td>
+                        <td>${patient.insurance_provider || '--'}</td>
+                        <td>${patient.registration_date || '--'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewPatient(${patient.patient_id})">Details</button>
+                            <button class="btn btn-sm btn-outline-success" onclick="createAppointment(${patient.patient_id}, '${patient.first_name}', '${patient.last_name}')">Appointment</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = tableHtml;
+        }
+        
+        // Export patient list
+        function exportPatientList() {
+            const patientsData = window.myPatientsData || [];
+            let csvContent = "data:text/csv;charset=utf-8,Patient ID,Name,Gender,Age,Phone,Last Visit,Visit Count\n";
+            
+            patientsData.forEach(patientInfo => {
+                const patient = patientInfo.patient;
+                const latestAppointment = patientInfo.appointments[0];
+                const visitCount = patientInfo.appointments.length;
+                
+                // Calculate age
+                let age = '--';
+                if (patient.date_of_birth) {
+                    const birthDate = new Date(patient.date_of_birth);
+                    const today = new Date();
+                    age = today.getFullYear() - birthDate.getFullYear();
+                }
+                
+                const row = [
+                    `P${patient.patient_id}`,
+                    `${patient.first_name} ${patient.last_name}`,
+                    patient.gender === 'male' || patient.gender === 'M' ? 'Male' : patient.gender === 'female' || patient.gender === 'F' ? 'Female' : 'Unknown',
+                    age,
+                    patient.contact_number || '--',
+                    latestAppointment ? latestAppointment.appointment_date : 'No records',
+                    visitCount
+                ].map(field => `"${field}"`).join(",");
+                
+                csvContent += row + "\n";
+            });
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `doctor_patients_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Load advanced search (placeholder for future enhancements)
+        function loadAdvancedSearch() {
+            alert('Advanced search features coming soon!');
+        }
+        
+        // ================ Action Functions ================
+        
+        // Start appointment
+        async function startAppointment(appointmentId) {
+            if (confirm('Start this appointment?')) {
+                try {
+                    debugLog(`Starting appointment: /appointments/${appointmentId}`);
+                    const response = await fetch(`http://localhost:5000/appointments/${appointmentId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: 'In Progress'
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        alert(`Started appointment #${appointmentId}`);
+                        debugLog('Appointment started successfully');
+                        // Reload data
+                        loadTodaySchedule();
+                        if (document.getElementById('schedule-content').style.display === 'block') {
+                            loadFullSchedule();
+                        }
+                    } else {
+                        alert('Operation failed');
+                        debugLog('Failed to start appointment');
+                    }
+                } catch (error) {
+                    console.error('Failed to start appointment:', error);
+                    debugLog(`Failed to start appointment: ${error.message}`);
+                    alert('Operation failed, please check network connection');
+                }
+            }
+        }
+        
+        // Complete appointment
+        async function completeAppointment(appointmentId) {
+            if (confirm('Complete this appointment?')) {
+                try {
+                    debugLog(`Completing appointment: /appointments/${appointmentId}`);
+                    const response = await fetch(`http://localhost:5000/appointments/${appointmentId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: 'Completed'
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        alert(`Completed appointment #${appointmentId}`);
+                        debugLog('Appointment completed successfully');
+                        // Reload data
+                        loadTodaySchedule();
+                        if (document.getElementById('schedule-content').style.display === 'block') {
+                            loadFullSchedule();
+                        }
+                        // Update statistics
+                        loadDoctorStats();
+                    } else {
+                        alert('Operation failed');
+                        debugLog('Failed to complete appointment');
+                    }
+                } catch (error) {
+                    console.error('Failed to complete appointment:', error);
+                    debugLog(`Failed to complete appointment: ${error.message}`);
+                    alert('Operation failed, please check network connection');
+                }
+            }
+        }
+        
+        // Cancel appointment
+        async function cancelAppointment(appointmentId) {
+            if (confirm('Are you sure you want to cancel this appointment?')) {
+                try {
+                    debugLog(`Cancelling appointment: /appointments/${appointmentId}`);
+                    const response = await fetch(`http://localhost:5000/appointments/${appointmentId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: 'Cancelled'
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        alert(`Cancelled appointment #${appointmentId}`);
+                        debugLog('Appointment cancelled successfully');
+                        // Reload data
+                        loadTodaySchedule();
+                        if (document.getElementById('schedule-content').style.display === 'block') {
+                            loadFullSchedule();
+                        }
+                        // Update statistics
+                        loadDoctorStats();
+                    } else {
+                        alert('Operation failed');
+                        debugLog('Failed to cancel appointment');
+                    }
+                } catch (error) {
+                    console.error('Failed to cancel appointment:', error);
+                    debugLog(`Failed to cancel appointment: ${error.message}`);
+                    alert('Operation failed, please check network connection');
+                }
+            }
+        }
+        
+        // View appointment details
+        function viewAppointment(appointmentId) {
+            // Could redirect to appointment details page or show modal
+            alert(`View appointment details #${appointmentId}\n\nThis could display detailed information about the appointment, such as patient symptoms, medical history, etc.`);
+        }
+        
+        // View patient details
+        async function viewPatient(patientId) {
+            try {
+                debugLog(`Viewing patient details: /patients/${patientId}`);
+                // Get patient information
+                const patientResponse = await fetch(`http://localhost:5000/patients/${patientId}`);
+                if (!patientResponse.ok) throw new Error('Failed to get patient information');
+                const patient = await patientResponse.json();
+                
+                // Get patient's appointment records with current doctor
+                const appointmentsResponse = await fetch(`http://localhost:5000/patients/${patientId}/appointments`);
+                const allAppointments = await appointmentsResponse.json();
+                const doctorAppointments = allAppointments.filter(a => a.doctor_id == currentDoctorId);
+                
+                // Get patient's billing records
+                const billingResponse = await fetch(`http://localhost:5000/patients/${patientId}/billing`);
+                const bills = await billingResponse.json();
+                
+                // Build display content
+                let genderDisplay = 'Unknown';
+                if (patient.gender === 'male' || patient.gender === 'M') {
+                    genderDisplay = 'Male';
+                } else if (patient.gender === 'female' || patient.gender === 'F') {
+                    genderDisplay = 'Female';
+                }
+                
+                let age = '--';
+                if (patient.date_of_birth) {
+                    const birthDate = new Date(patient.date_of_birth);
+                    const today = new Date();
+                    age = today.getFullYear() - birthDate.getFullYear();
+                }
+                
+                // Store patient ID for appointment creation
+                window.currentViewedPatientId = patientId;
+                window.currentViewedPatientName = `${patient.first_name} ${patient.last_name}`;
+                
+                // Build modal content
+                let html = `
+                    <h4>${patient.first_name} ${patient.last_name}</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Patient ID:</strong> P${patient.patient_id}</p>
+                            <p><strong>Gender:</strong> ${genderDisplay}</p>
+                            <p><strong>Age:</strong> ${age}</p>
+                            <p><strong>Date of Birth:</strong> ${patient.date_of_birth || 'Not provided'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Contact:</strong> ${patient.contact_number || 'Not provided'}</p>
+                            <p><strong>Email:</strong> ${patient.email || 'Not provided'}</p>
+                            <p><strong>Address:</strong> ${patient.address || 'Not provided'}</p>
+                            <p><strong>Insurance:</strong> ${patient.insurance_provider || 'Not provided'} (${patient.insurance_number || 'None'})</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <h5>Appointment History with You</h5>
+                `;
+                
+                if (doctorAppointments.length > 0) {
+                    html += `<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Date</th><th>Time</th><th>Reason</th><th>Status</th></tr></thead><tbody>`;
+                    doctorAppointments.forEach(appointment => {
+                        html += `<tr><td>${appointment.appointment_date}</td><td>${appointment.appointment_time}</td><td>${appointment.reason || 'Regular Checkup'}</td><td>${appointment.status}</td></tr>`;
+                    });
+                    html += `</tbody></table></div>`;
+                } else {
+                    html += `<p>No previous appointments with you.</p>`;
+                }
+                
+                if (bills.length > 0) {
+                    const totalPending = bills.filter(b => b.status !== 'Paid').reduce((sum, b) => sum + (b.amount || 0), 0);
+                    html += `<hr><h5>Billing Summary</h5>`;
+                    html += `<p>Total pending: ¥${totalPending.toFixed(2)}</p>`;
+                }
+                
+                document.getElementById('patientDetailsContent').innerHTML = html;
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('patientDetailsModal'));
+                modal.show();
+                
+                debugLog('Patient details viewed successfully');
+                
+            } catch (error) {
+                console.error('Failed to view patient details:', error);
+                debugLog(`Failed to view patient details: ${error.message}`);
+                alert('Failed to get patient details');
+            }
+        }
+        
+        // Create appointment from modal
+        function createAppointmentFromModal() {
+            if (window.currentViewedPatientId && window.currentViewedPatientName) {
+                createAppointment(window.currentViewedPatientId, window.currentViewedPatientName);
+                // Close the details modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('patientDetailsModal'));
+                modal.hide();
+            }
+        }
+        
+        // Create appointment for patient
+        function createAppointment(patientId, patientName) {
+            const modal = new bootstrap.Modal(document.getElementById('doctorAppointmentModal'));
+            const form = document.getElementById('doctorAppointmentForm');
+            
+            // Reset form
+            form.reset();
+            
+            // Set patient information
+            document.getElementById('doctorAppointmentPatientId').value = patientId;
+            document.getElementById('doctorPatientName').value = patientName;
+            
+            // Set default date to tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('doctorAppointmentDate').value = tomorrow.toISOString().split('T')[0];
+            
+            modal.show();
+            debugLog(`Creating appointment for patient ${patientName}`);
+        }
+        
+        // Doctor appointment form submission
+        document.getElementById('doctorAppointmentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const patientId = document.getElementById('doctorAppointmentPatientId').value;
+            
+            const formData = {
+                patient_id: parseInt(patientId),
+                doctor_id: parseInt(currentDoctorId),
+                appointment_date: document.getElementById('doctorAppointmentDate').value,
+                appointment_time: document.getElementById('doctorAppointmentTime').value,
+                reason_for_visit: document.getElementById('doctorAppointmentReason').value,
+                description: document.getElementById('doctorAppointmentDescription').value.trim(),
+                status: 'Scheduled'
+            };
+            
+            // Validate required fields
+            if (!formData.appointment_date || !formData.appointment_time || !formData.reason_for_visit) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            try {
+                debugLog('Creating appointment: /appointments');
+                // Add appointment
+                const response = await fetch('http://localhost:5000/appointments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to create appointment: ${errorText}`);
+                }
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('doctorAppointmentModal'));
+                modal.hide();
+                
+                // Show success message
+                alert('Appointment created successfully!');
+                debugLog('Appointment created successfully');
+                
+                // Refresh data
+                if (document.getElementById('patients-content').style.display === 'block') {
+                    loadAllPatients();
+                }
+                if (document.getElementById('dashboard-content').style.display === 'block') {
+                    loadTodaySchedule();
+                }
+                
+            } catch (error) {
+                console.error('Failed to create appointment:', error);
+                debugLog(`Failed to create appointment: ${error.message}`);
+                alert(`Failed to create appointment: ${error.message}`);
+            }
+        });
+        
+        // Logout
+        function logout() {
+            localStorage.removeItem('doctor_id');
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
