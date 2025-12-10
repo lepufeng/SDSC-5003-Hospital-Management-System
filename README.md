@@ -17,6 +17,7 @@ SDSC-5003-Hospital-Management-System/
 ├── frontend/       # HTML/CSS/JavaScript pages for user interaction
 ├── dataset/        # CSV / SQL files used to populate the database
 ├── .gitignore
+├── app.py          # Flask Main Application Entry
 └── README.md
 ````
 
@@ -24,7 +25,7 @@ High-level description:
 
 * `backend/`
 
-  * Contains the Python server code (e.g. `app.py`) that defines the REST API for managing doctors, patients, appointments, treatments and billing records.
+  * Contains the Python server code (e.g. `db.py`) that defines the REST API for managing doctors, patients, appointments, treatments and billing records.
   * Handles all database connections and SQL queries against the underlying SQLite database.
 
 * `frontend/`
@@ -50,7 +51,7 @@ Minimum requirements:
 * The following Python packages (installable via `pip`):
 
   * `flask`
-  * (plus any additional packages imported in `backend/app.py`, such as `flask_cors` or others)
+  * (plus any additional packages imported in `backend/patient.py`, such as `flask_cors` or others)
 
 The database layer uses **SQLite**, accessed through Python’s standard library (`sqlite3`).
 
